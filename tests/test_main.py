@@ -52,8 +52,8 @@ class ApiHelperTests(unittest.TestCase):
 
     def test_parse_recipients_api_accepts_user_email(self):
         async def scenario():
-            result = await parse_recipients_api({"value": "liangjiahong0516@gmail.com"})
-            self.assertEqual(result, {"recipients": ["liangjiahong0516@gmail.com"]})
+            result = await parse_recipients_api({"value": "user@example.com"})
+            self.assertEqual(result, {"recipients": ["user@example.com"]})
 
         asyncio.run(scenario())
 
