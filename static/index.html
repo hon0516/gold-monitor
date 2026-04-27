@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <title>积存金监测配置</title>
+  <style>
+    :root {
+      --bg: #f3f7f2;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --accent: #176f3d;
+      --accent-2: #0d8b52;
+      --danger: #b42318;
+      --line: #d9e2d5;
+      --tag: #e7f2eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 700px at 10% -10%, #e9f5ec 0%, var(--bg) 45%), var(--bg);
+      color: var(--ink);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .wrap {
+      width: min(1680px, calc(100% - 32px));
+      margin: 18px auto;
+      padding: 0 0 24px;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1.2fr 1fr;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(25, 68, 42, 0.06);
+      padding: 14px;
+    }
+    .title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; }
+    .warn {
+      grid-column: 1 / -1;
+      background: #fff1f2;
+      color: #8a2432;
+      border: 1px solid #fecdd3;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .row {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #cbd5c0;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 14px;
+      color: var(--ink);
+      background: #fff;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    .ops {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: #ecf5ef; color: #20583a; }
+    .btn-danger { background: #ffe4e6; color: var(--danger); }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .source-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .source-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafcf9;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .source-item input {
+      width: auto;
+      margin: 0;
+    }
+    .kv {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafcf9;
+    }
+    .kv .k { font-size: 12px; color: var(--muted); }
+    .kv .v { margin-top: 4px; font-weight: 700; font-size: 16px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1px solid #e8eee4;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 700; }
+    .tag {
+      display: inline-block;
+      background: var(--tag);
+      color: #1b5a36;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .msg {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafcf9;
+      margin-top: 12px;
+    }
+    summary {
+      cursor: pointer;
+      color: #20583a;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pager select {
+      width: auto;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .pager button {
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #ecf5ef;
+      color: #20583a;
+    }
+    .pager button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    @media (max-width: 980px) {
+      .wrap { grid-template-columns: 1fr; }
+      .grid, .status-grid, .source-list { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="warn">安全提示：当前页面按需求为开放访问。请仅在受信网络中部署，并保护服务器访问入口。</div>
+
+    <section class="card">
+      <div class="title">
+        <h1>积存金监测配置</h1>
+        <span class="tag" id="selected_sources_tag">-</span>
+      </div>
+
+      <div class="row">
+        <label>监控银行</label>
+        <div id="source_list" class="source-list"></div>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <label>告警收件人（多个邮箱用逗号/分号/换行分隔）</label>
+        <textarea id="recipients" placeholder="a@example.com, b@example.com"></textarea>
+      </div>
+      <details id="smtp_advanced">
+        <summary>高级 SMTP 设置</summary>
+        <div class="grid" style="margin-top:10px;">
+          <div class="row"><label>SMTP Host</label><input id="smtp_host" placeholder="smtp.example.com" /></div>
+          <div class="row"><label>SMTP Port</label><input id="smtp_port" type="number" /></div>
+          <div class="row"><label>加密方式</label>
+            <select id="smtp_security">
+              <option value="none">None</option>
+              <option value="starttls">STARTTLS</option>
+              <option value="ssl">SSL</option>
+            </select>
+          </div>
+          <div class="row"><label>SMTP 用户名</label><input id="smtp_username" /></div>
+          <div class="row"><label>SMTP 密码（留空=不变）</label><input id="smtp_password" type="password" /></div>
+          <div class="row"><label>发件人名称</label><input id="sender_name" /></div>
+          <div class="row"><label>发件人邮箱</label><input id="sender_email" placeholder="alert@example.com" /></div>
+          <div class="row"><label>邮件前缀</label><input id="subject_prefix" placeholder="[浙商]" /></div>
+        </div>
+      </details>
+
+      <h2 style="margin-top:12px;">告警策略</h2>
+      <div class="grid" style="margin-top:8px;">
+        <div class="row"><label>1h 差值阈值（元/克）</label><input id="threshold_delta" type="number" step="0.01" /></div>
+        <div class="row"><label>1h 幅度阈值（%）</label><input id="threshold_pct" type="number" step="0.01" /></div>
+        <div class="row"><label>近极值判定阈值（%）</label><input id="near_extreme_pct" type="number" step="0.01" /></div>
+        <div class="row"><label>告警冷却（分钟）</label><input id="cooldown_minutes" type="number" /></div>
+        <div class="row"><label>冷却突破差值（元/克）</label><input id="extreme_breakthrough_delta" type="number" min="0" step="0.01" /></div>
+        <div class="row"><label>普通检测间隔（秒）</label><input id="poll_interval_seconds" type="number" min="1" /></div>
+        <div class="row"><label>快速检测间隔（秒）</label><input id="fast_poll_interval_seconds" type="number" min="1" /></div>
+        <div class="row"><label>加速触发比例</label><input id="adaptive_threshold_ratio" type="number" min="0" step="0.01" /></div>
+        <div class="row"><label>记录保留天数</label><input id="retention_days" type="number" min="1" /></div>
+        <div class="row"><label>监控开关</label>
+          <select id="enabled">
+            <option value="true">启用</option>
+            <option value="false">停用</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ops">
+        <button class="btn-primary" onclick="saveConfig()">保存配置</button>
+        <button class="btn-secondary" onclick="sendTest()">发送测试邮件</button>
+        <button class="btn-secondary" onclick="runCheck()">立即检测一次</button>
+        <button class="btn-danger" onclick="reloadAll()">刷新状态</button>
+      </div>
+      <div id="msg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <div class="title"><h2>运行状态</h2><span id="next_run" class="tag">-</span></div>
+      <div class="status-grid">
+        <div class="kv"><div class="k">调度器</div><div class="v" id="scheduler_running">-</div></div>
+        <div class="kv"><div class="k">监控开关</div><div class="v" id="monitor_enabled">-</div></div>
+        <div class="kv"><div class="k">最近运行</div><div class="v" id="last_run_time">-</div></div>
+        <div class="kv"><div class="k">最近状态</div><div class="v" id="last_run_status">-</div></div>
+        <div class="kv"><div class="k">最近价格</div><div class="v" id="last_price">-</div></div>
+        <div class="kv"><div class="k">最近1h振幅</div><div class="v" id="last_delta">-</div></div>
+        <div class="kv"><div class="k">当前间隔</div><div class="v" id="active_poll_interval">-</div></div>
+        <div class="kv"><div class="k">阈值进度</div><div class="v" id="threshold_progress">-</div></div>
+      </div>
+
+      <h2 style="margin-top:14px;">最近告警</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>银行</th>
+            <th>当前价</th>
+            <th>1h差值</th>
+            <th>1h幅度</th>
+            <th>标签</th>
+            <th>邮件发送</th>
+          </tr>
+        </thead>
+        <tbody id="alerts_body"></tbody>
+      </table>
+      <div class="table-footer">
+        <span id="alerts_page_info">-</span>
+        <div class="pager">
+          <label for="alerts_page_size">每页</label>
+          <select id="alerts_page_size" onchange="changeAlertsPageSize()">
+            <option value="10" selected>10条</option>
+            <option value="20">20条</option>
+            <option value="50">50条</option>
+          </select>
+          <button type="button" id="alerts_prev" onclick="changeAlertsPage(-1)">上一页</button>
+          <span id="alerts_page_number">1 / 1</span>
+          <button type="button" id="alerts_next" onclick="changeAlertsPage(1)">下一页</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const alertsState = {
+      items: [],
+      page: 1,
+      pageSize: 10
+    };
+    let updatesSocket = null;
+    let reconnectTimer = null;
+    let pollingTimer = null;
+
+    function setMsg(text, bad = false) {
+      const el = document.getElementById('msg');
+      el.textContent = text;
+      el.style.color = bad ? '#b42318' : '#475467';
+    }
+
+    function splitRecipients(raw) {
+      return raw
+        .split(/[;,\n\r]+/g)
+        .map(x => x.trim())
+        .filter(Boolean);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value).replace('T', ' ').replace(/\.\d+/, '').replace(/([+-]\d{2}:\d{2}|Z)$/, '');
+      const pad = n => String(n).padStart(2, '0');
+      return [
+        date.getFullYear(),
+        pad(date.getMonth() + 1),
+        pad(date.getDate())
+      ].join('-') + ' ' + [
+        pad(date.getHours()),
+        pad(date.getMinutes()),
+        pad(date.getSeconds())
+      ].join(':');
+    }
+
+    function mailStatusHtml(item) {
+      if (Number(item.mail_sent) === 1) {
+        return '<span class="tag">已发送</span>';
+      }
+      const reason = item.mail_error || '';
+      if (reason === 'cooldown active') {
+        return '<span class="tag">冷却跳过</span>';
+      }
+      if (reason === 'no recipients configured') {
+        return '<span class="tag">无收件人</span>';
+      }
+      if (reason === 'smtp not configured') {
+        return '<span class="tag">SMTP 未配置</span>';
+      }
+      if (reason) {
+        return '<span class="tag">发送失败</span><br/><small style="color:#667085">' + reason + '</small>';
+      }
+      return '<span class="tag">未发送</span>';
+    }
+
+    function renderAlertsPage() {
+      const body = document.getElementById('alerts_body');
+      const pageInfo = document.getElementById('alerts_page_info');
+      const pageNumber = document.getElementById('alerts_page_number');
+      const prevButton = document.getElementById('alerts_prev');
+      const nextButton = document.getElementById('alerts_next');
+      const total = alertsState.items.length;
+      const totalPages = Math.max(1, Math.ceil(total / alertsState.pageSize));
+      alertsState.page = Math.min(Math.max(alertsState.page, 1), totalPages);
+      const start = (alertsState.page - 1) * alertsState.pageSize;
+      const pageItems = alertsState.items.slice(start, start + alertsState.pageSize);
+
+      body.innerHTML = '';
+      if (!pageItems.length) {
+        body.innerHTML = '<tr><td colspan="7" style="color:#667085;">暂无告警记录</td></tr>';
+      } else {
+        pageItems.forEach(item => {
+          let payload = {};
+          try { payload = JSON.parse(item.payload_json || '{}'); } catch (_) {}
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${formatDateTime(item.triggered_at)}</td>
+            <td>${payload.source_name || '-'}</td>
+            <td>${Number(item.current_price || 0).toFixed(2)}</td>
+            <td>${Number(item.delta || 0).toFixed(2)}</td>
+            <td>${Number(item.pct || 0).toFixed(2)}%</td>
+            <td><span class="tag">${item.badge || '-'}</span></td>
+            <td>${mailStatusHtml(item)}</td>
+          `;
+          body.appendChild(tr);
+        });
+      }
+
+      pageInfo.textContent = total
+        ? `第 ${start + 1}-${start + pageItems.length} 条，共 ${total} 条`
+        : '共 0 条';
+      pageNumber.textContent = `${alertsState.page} / ${totalPages}`;
+      prevButton.disabled = alertsState.page <= 1;
+      nextButton.disabled = alertsState.page >= totalPages;
+    }
+
+    function changeAlertsPage(delta) {
+      alertsState.page += delta;
+      renderAlertsPage();
+    }
+
+    function changeAlertsPageSize() {
+      alertsState.pageSize = Number(document.getElementById('alerts_page_size').value) || 10;
+      alertsState.page = 1;
+      renderAlertsPage();
+    }
+
+    function renderSources(cfg) {
+      const list = document.getElementById('source_list');
+      const selected = new Set(cfg.enabled_sources || ['zheshang']);
+      list.innerHTML = '';
+      (cfg.available_sources || []).forEach(source => {
+        const label = document.createElement('label');
+        label.className = 'source-item';
+        label.innerHTML = `
+          <input type="checkbox" name="enabled_sources" value="${source.code}" ${selected.has(source.code) ? 'checked' : ''} />
+          <span>${source.name}</span>
+        `;
+        label.querySelector('input').addEventListener('change', updateSelectedSourcesTag);
+        list.appendChild(label);
+      });
+      updateSelectedSourcesTag();
+    }
+
+    function enabledSourceCodes() {
+      return Array.from(document.querySelectorAll('input[name="enabled_sources"]:checked')).map(item => item.value);
+    }
+
+    function updateSelectedSourcesTag() {
+      const names = Array.from(document.querySelectorAll('input[name="enabled_sources"]:checked')).map(item => {
+        const label = item.closest('.source-item');
+        return label ? label.textContent.trim() : item.value;
+      });
+      document.getElementById('selected_sources_tag').textContent = names.length ? names.join(' / ') : '未选择';
+    }
+
+    function fillConfig(cfg) {
+      renderSources(cfg);
+      document.getElementById('smtp_host').value = cfg.smtp.host || '';
+      document.getElementById('smtp_port').value = cfg.smtp.port || 587;
+      document.getElementById('smtp_security').value = cfg.smtp.security || 'starttls';
+      document.getElementById('smtp_username').value = cfg.smtp.username || '';
+      document.getElementById('smtp_password').value = '';
+      document.getElementById('sender_name').value = cfg.smtp.sender_name || '';
+      document.getElementById('sender_email').value = cfg.smtp.sender_email || '';
+      document.getElementById('subject_prefix').value = cfg.smtp.subject_prefix || '[浙商]';
+      document.getElementById('recipients').value = (cfg.smtp.recipients || []).join('\n');
+
+      document.getElementById('threshold_delta').value = cfg.alert.threshold_delta;
+      document.getElementById('threshold_pct').value = cfg.alert.threshold_pct;
+      document.getElementById('near_extreme_pct').value = cfg.alert.near_extreme_pct;
+      document.getElementById('cooldown_minutes').value = cfg.alert.cooldown_minutes;
+      document.getElementById('extreme_breakthrough_delta').value = cfg.alert.extreme_breakthrough_delta;
+      document.getElementById('poll_interval_seconds').value = cfg.alert.poll_interval_seconds;
+      document.getElementById('fast_poll_interval_seconds').value = cfg.alert.fast_poll_interval_seconds;
+      document.getElementById('adaptive_threshold_ratio').value = cfg.alert.adaptive_threshold_ratio;
+      document.getElementById('retention_days').value = cfg.alert.retention_days;
+      document.getElementById('enabled').value = String(cfg.enabled);
+    }
+
+    function buildConfigPayload() {
+      const sources = enabledSourceCodes();
+      if (!sources.length) {
+        throw new Error('请至少选择一家监控银行');
+      }
+      const smtp = {
+        recipients: splitRecipients(document.getElementById('recipients').value)
+      };
+      if (document.getElementById('smtp_advanced').open) {
+        Object.assign(smtp, {
+          host: document.getElementById('smtp_host').value.trim(),
+          port: Number(document.getElementById('smtp_port').value),
+          security: document.getElementById('smtp_security').value,
+          username: document.getElementById('smtp_username').value.trim(),
+          password: document.getElementById('smtp_password').value,
+          sender_name: document.getElementById('sender_name').value.trim(),
+          sender_email: document.getElementById('sender_email').value.trim(),
+          subject_prefix: document.getElementById('subject_prefix').value.trim()
+        });
+      }
+
+      return {
+        smtp,
+        alert: {
+          threshold_delta: Number(document.getElementById('threshold_delta').value),
+          threshold_pct: Number(document.getElementById('threshold_pct').value),
+          near_extreme_pct: Number(document.getElementById('near_extreme_pct').value),
+          cooldown_minutes: Number(document.getElementById('cooldown_minutes').value),
+          extreme_breakthrough_delta: Number(document.getElementById('extreme_breakthrough_delta').value),
+          poll_interval_seconds: Number(document.getElementById('poll_interval_seconds').value),
+          fast_poll_interval_seconds: Number(document.getElementById('fast_poll_interval_seconds').value),
+          adaptive_threshold_ratio: Number(document.getElementById('adaptive_threshold_ratio').value),
+          retention_days: Number(document.getElementById('retention_days').value)
+        },
+        enabled_sources: sources,
+        enabled: document.getElementById('enabled').value === 'true'
+      };
+    }
+
+    async function saveConfig() {
+      setMsg('保存中...');
+      try {
+        const resp = await fetch('/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildConfigPayload())
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '保存失败');
+        fillConfig(data);
+        setMsg('配置已保存');
+        await loadStatus();
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      }
+    }
+
+    async function sendTest() {
+      setMsg('发送测试邮件中...');
+      try {
+        const recipients = splitRecipients(document.getElementById('recipients').value);
+        const resp = await fetch('/api/actions/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipients })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '发送失败');
+        setMsg('测试邮件已发送: ' + data.recipients.join(', '));
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      }
+    }
+
+    async function runCheck() {
+      setMsg('正在执行检测...');
+      try {
+        const resp = await fetch('/api/actions/run-check', { method: 'POST' });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '检测失败');
+        const count = (data.results || []).length;
+        const triggered = (data.results || []).filter(item => item.triggered).map(item => item.source_name).join('、') || '无';
+        setMsg(`检测完成：${count} 个数据源，触发=${triggered}`);
+        await loadStatus();
+        await loadAlerts();
+      } catch (err) {
+        setMsg(err.message || String(err), true);
+      }
+    }
+
+    async function loadConfig() {
+      const resp = await fetch('/api/config');
+      const data = await resp.json();
+      fillConfig(data);
+    }
+
+    function renderStatus(data) {
+      document.getElementById('scheduler_running').textContent = data.scheduler_running ? '运行中' : '未运行';
+      document.getElementById('monitor_enabled').textContent = data.enabled ? '启用' : '停用';
+      document.getElementById('next_run').textContent = formatDateTime(data.next_run_time);
+      const sourceNames = (data.available_sources || [])
+        .filter(source => (data.enabled_sources || []).includes(source.code))
+        .map(source => source.name);
+      document.getElementById('selected_sources_tag').textContent = sourceNames.length ? sourceNames.join(' / ') : '未选择';
+
+      const lr = data.last_run || {};
+      document.getElementById('last_run_time').textContent = formatDateTime(lr.run_at);
+      document.getElementById('last_run_status').textContent = lr.status || '-';
+
+      const last = data.last_result || {};
+      const rows = last.results || [];
+      const r = rows[0] || {};
+      document.getElementById('last_price').textContent = rows.length
+        ? rows.map(item => `${item.source_name}: ${Number(item.current_price || 0).toFixed(2)}`).join(' / ')
+        : '-';
+      document.getElementById('last_delta').textContent = rows.length
+        ? rows.map(item => `${item.source_name}: ${Number(item.delta || 0).toFixed(2)}元 / ${Number(item.pct || 0).toFixed(2)}%`).join(' / ')
+        : '-';
+      document.getElementById('active_poll_interval').textContent = data.active_poll_interval_seconds ? `${data.active_poll_interval_seconds}s` : '-';
+      document.getElementById('threshold_progress').textContent = r.threshold_progress !== undefined
+        ? `${Number((r.threshold_progress || 0) * 100).toFixed(1)}%${r.near_threshold ? '（加速）' : ''}`
+        : '-';
+    }
+
+    async function loadStatus() {
+      const resp = await fetch('/api/status');
+      const data = await resp.json();
+      renderStatus(data);
+    }
+
+    function renderAlerts(items) {
+      alertsState.items = items || [];
+      renderAlertsPage();
+    }
+
+    async function loadAlerts() {
+      const resp = await fetch('/api/alerts?limit=200');
+      const data = await resp.json();
+      renderAlerts(data.items);
+    }
+
+    async function reloadAll() {
+      await Promise.all([loadStatus(), loadAlerts()]);
+      setMsg('状态已刷新');
+    }
+
+    function applySnapshot(data) {
+      if (data.status) renderStatus(data.status);
+      if (data.alerts) renderAlerts(data.alerts);
+    }
+
+    function startPollingFallback() {
+      if (pollingTimer) return;
+      pollingTimer = setInterval(() => {
+        Promise.all([loadStatus(), loadAlerts()]).catch(err => {
+          setMsg('自动刷新失败: ' + (err.message || String(err)), true);
+        });
+      }, 10000);
+    }
+
+    function stopPollingFallback() {
+      if (!pollingTimer) return;
+      clearInterval(pollingTimer);
+      pollingTimer = null;
+    }
+
+    function scheduleReconnect() {
+      if (reconnectTimer) return;
+      startPollingFallback();
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectUpdates();
+      }, 5000);
+    }
+
+    function connectUpdates() {
+      if (!('WebSocket' in window)) {
+        startPollingFallback();
+        return;
+      }
+      if (updatesSocket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(updatesSocket.readyState)) {
+        return;
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      updatesSocket = new WebSocket(`${protocol}//${window.location.host}/ws/updates`);
+
+      updatesSocket.onopen = () => {
+        stopPollingFallback();
+      };
+      updatesSocket.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'snapshot') applySnapshot(data);
+        } catch (err) {
+          setMsg('实时更新解析失败: ' + (err.message || String(err)), true);
+        }
+      };
+      updatesSocket.onerror = () => {
+        updatesSocket.close();
+      };
+      updatesSocket.onclose = () => {
+        scheduleReconnect();
+      };
+    }
+
+    async function init() {
+      try {
+        await loadConfig();
+        await loadStatus();
+        await loadAlerts();
+        connectUpdates();
+        startPollingFallback();
+      } catch (err) {
+        setMsg('初始化失败: ' + (err.message || String(err)), true);
+        startPollingFallback();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
