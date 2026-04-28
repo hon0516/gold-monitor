@@ -93,7 +93,7 @@ class MonitorService:
                             badge=snapshot.badge,
                         )
                         current_payload["direction"] = direction
-                        last_sent_alert = self.db.get_last_sent_alert_by_direction(direction, source.code)
+                        last_sent_alert = self.db.get_last_sent_alert_by_source(source.code)
                         last_sent_at = (
                             datetime.fromisoformat(last_sent_alert["triggered_at"])
                             if last_sent_alert is not None

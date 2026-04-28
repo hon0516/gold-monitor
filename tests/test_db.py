@@ -98,6 +98,11 @@ class DatabaseTests(unittest.TestCase):
 
         self.assertIsNotNone(self.db.get_last_sent_alert_by_direction("high", "zheshang"))
         self.assertIsNone(self.db.get_last_sent_alert_by_direction("low", "zheshang"))
+        self.assertIsNotNone(self.db.get_last_sent_alert_by_source("zheshang"))
+        self.assertEqual(
+            json.loads(self.db.get_last_sent_alert_by_source("zheshang")["payload_json"])["source_code"],
+            "zheshang",
+        )
 
     def test_cleanup_old_records(self):
         old = (datetime.now(ZoneInfo("Asia/Shanghai")) - timedelta(days=10)).isoformat()

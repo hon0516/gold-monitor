@@ -144,6 +144,30 @@ class MonitorTests(unittest.TestCase):
         send.assert_not_called()
         self.assertEqual(len(self.db.get_recent_alerts(20)), 1)
 
+    def test_cooldown_skips_opposite_direction_without_new_extreme(self):
+        cfg = self.db.get_stored_config()
+        cfg.smtp.recipients = ["a@example.com"]
+        cfg.smtp.host = "smtp.example.com"
+        cfg.smtp.sender_email = "sender@example.com"
+        cfg.alert.cooldown_minutes = 60
+        cfg.alert.extreme_breakthrough_delta = 2.0
+        self.save_config(cfg)
+
+        with patch(
+            "app.monitor.fetch_snapshot",
+            return_value=snapshot(current=102.0, high=104.0, low=100.0, badge="区间内"),
+        ), patch("app.monitor.send_alert_email"):
+            run(self.service.run_check(manual=True))
+
+        with patch(
+            "app.monitor.fetch_snapshot",
+            return_value=snapshot(current=101.0, high=104.0, low=100.0, badge="区间内"),
+        ), patch("app.monitor.send_alert_email") as send:
+            run(self.service.run_check(manual=True))
+
+        send.assert_not_called()
+        self.assertEqual(len(self.db.get_recent_alerts(20)), 1)
+
     def test_extreme_breakthrough_bypasses_cooldown(self):
         cfg = self.db.get_stored_config()
         cfg.smtp.recipients = ["a@example.com"]

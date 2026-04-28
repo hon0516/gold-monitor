@@ -206,6 +206,23 @@ class Database:
                 return item
         return None
 
+    def get_last_sent_alert_by_source(self, source_code: str = "") -> dict[str, Any] | None:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT * FROM alert_events
+                WHERE mail_sent=1
+                ORDER BY id DESC
+                """
+            ).fetchall()
+        for row in rows:
+            item = dict(row)
+            payload = self._payload(item)
+            if source_code and payload.get("source_code") != source_code:
+                continue
+            return item
+        return None
+
     def get_last_alert_event_by_direction(self, direction: str, source_code: str = "") -> dict[str, Any] | None:
         with self.connect() as conn:
             rows = conn.execute(
