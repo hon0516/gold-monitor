@@ -12,8 +12,9 @@ from .models import CheckResult, MonitorRunResult
 
 
 class MonitorService:
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, user_id: int = 1):
         self.db = db
+        self.user_id = user_id
         self.lock: asyncio.Lock | None = None
         self.last_result: dict = {}
 
@@ -21,10 +22,10 @@ class MonitorService:
         if self.lock is None:
             self.lock = asyncio.Lock()
         async with self.lock:
-            cfg = self.db.get_config()
+            cfg = self.db.get_config(self.user_id)
             if not cfg.enabled and not manual:
                 details = {"manual": manual, "reason": "monitor disabled"}
-                self.db.add_run_log("SKIPPED", "Monitoring is disabled", details)
+                self.db.add_run_log("SKIPPED", "Monitoring is disabled", details, self.user_id)
                 result = MonitorRunResult(
                     triggered=False,
                     near_threshold=False,
@@ -46,7 +47,7 @@ class MonitorService:
                 error = ""
                 try:
                     now_dt = datetime.now(ZoneInfo(cfg.timezone))
-                    local_points = self.db.get_price_samples(source.code, now_dt - timedelta(hours=1))
+                    local_points = self.db.get_price_samples(source.code, now_dt - timedelta(hours=1), self.user_id)
                     snapshot = fetch_snapshot(
                         source=source,
                         threshold_delta=cfg.alert.threshold_delta,
@@ -55,7 +56,7 @@ class MonitorService:
                         timezone=cfg.timezone,
                         local_points=local_points,
                     )
-                    self.db.add_price_sample(source.code, snapshot.run_time.isoformat(), snapshot.current_price)
+                    self.db.add_price_sample(source.code, snapshot.run_time.isoformat(), snapshot.current_price, self.user_id)
 
                     progress = threshold_progress(
                         delta=snapshot.delta,
@@ -93,7 +94,7 @@ class MonitorService:
                             badge=snapshot.badge,
                         )
                         current_payload["direction"] = direction
-                        last_sent_alert = self.db.get_last_sent_alert_by_source(source.code)
+                        last_sent_alert = self.db.get_last_sent_alert_by_source(source.code, self.user_id)
                         last_sent_at = (
                             datetime.fromisoformat(last_sent_alert["triggered_at"])
                             if last_sent_alert is not None
@@ -129,7 +130,7 @@ class MonitorService:
 
                         should_record_alert = True
                         if skip_reason == "cooldown active":
-                            last_alert = self.db.get_last_alert_event_by_direction(direction, source.code)
+                            last_alert = self.db.get_last_alert_event_by_direction(direction, source.code, self.user_id)
                             should_record_alert = (
                                 last_alert is None
                                 or now_dt - datetime.fromisoformat(last_alert["triggered_at"])
@@ -145,6 +146,7 @@ class MonitorService:
                                 },
                                 mail_sent=mail_sent,
                                 mail_error=error or skip_reason,
+                                user_id=self.user_id,
                             )
 
                     results.append(
@@ -201,6 +203,7 @@ class MonitorService:
                 "ERROR" if result.error and not any(item.current_price for item in results) else "OK",
                 "Run completed",
                 {"manual": manual, **result.model_dump()},
+                self.user_id,
             )
             self.last_result = result.model_dump()
             return result

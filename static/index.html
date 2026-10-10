@@ -210,6 +210,8 @@
       cursor: not-allowed;
       opacity: 0.45;
     }
+    #login_view { max-width: 420px; margin: 12vh auto; }
+    #app_view.hidden, #login_view.hidden { display: none; }
 
     @media (max-width: 980px) {
       .wrap { grid-template-columns: 1fr; }
@@ -218,13 +220,20 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <section id="login_view" class="card">
+    <h1>积存金监测登录</h1>
+    <div class="row"><label>用户名</label><input id="login_username" autocomplete="username" /></div>
+    <div class="row"><label>密码</label><input id="login_password" type="password" autocomplete="current-password" /></div>
+    <button class="btn-primary" onclick="login()">登录</button>
+    <div id="login_msg" class="msg"></div>
+  </section>
+  <div id="app_view" class="wrap hidden">
     <div class="warn">安全提示：当前页面按需求为开放访问。请仅在受信网络中部署，并保护服务器访问入口。</div>
 
     <section class="card">
       <div class="title">
         <h1>积存金监测配置</h1>
-        <span class="tag" id="selected_sources_tag">-</span>
+        <span><span class="tag" id="selected_sources_tag">-</span> <button class="btn-secondary" onclick="logout()">退出登录</button></span>
       </div>
 
       <div class="row">
@@ -284,6 +293,16 @@
       <div id="msg" class="msg"></div>
     </section>
 
+    <section id="admin_panel" class="card hidden">
+      <div class="title"><h2>用户管理</h2></div>
+      <div class="grid">
+        <div class="row"><label>新用户名</label><input id="new_username" /></div>
+        <div class="row"><label>初始密码（至少8位）</label><input id="new_password" type="password" /></div>
+      </div>
+      <div class="ops"><button class="btn-primary" onclick="createUser()">创建用户</button></div>
+      <div id="users_list" class="msg"></div>
+    </section>
+
     <section class="card">
       <div class="title"><h2>运行状态</h2><span id="next_run" class="tag">-</span></div>
       <div class="status-grid">
@@ -338,6 +357,73 @@
     let updatesSocket = null;
     let reconnectTimer = null;
     let pollingTimer = null;
+    let csrfToken = '';
+
+    function showLogin() {
+      document.getElementById('login_view').classList.remove('hidden');
+      document.getElementById('app_view').classList.add('hidden');
+    }
+
+    function showApp(user) {
+      csrfToken = user.csrf_token || csrfToken;
+      document.getElementById('login_view').classList.add('hidden');
+      document.getElementById('app_view').classList.remove('hidden');
+      document.getElementById('admin_panel').classList.toggle('hidden', !user.is_admin);
+      if (user.is_admin) loadAdminUsers();
+    }
+
+    async function loadAdminUsers() {
+      const resp = await apiFetch('/api/admin/users');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      document.getElementById('users_list').innerHTML = (data.items || []).map(item =>
+        `<div style="display:flex;gap:8px;align-items:center;margin:6px 0;"><span>${item.username}${item.is_admin ? '（管理员）' : ''}</span><span class="tag">${item.is_active ? '启用' : '停用'}</span><button class="btn-secondary" onclick="toggleUser(${item.id}, ${!item.is_active})">${item.is_active ? '停用' : '启用'}</button><button class="btn-secondary" onclick="resetUserPassword(${item.id})">重置密码</button></div>`
+      ).join('');
+    }
+
+    async function createUser() {
+      const resp = await apiFetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: document.getElementById('new_username').value.trim(), password: document.getElementById('new_password').value }) });
+      const data = await resp.json();
+      if (!resp.ok) { setMsg(data.detail || '创建用户失败', true); return; }
+      document.getElementById('new_username').value = ''; document.getElementById('new_password').value = ''; await loadAdminUsers(); setMsg('用户已创建');
+    }
+
+    async function toggleUser(id, active) {
+      const resp = await apiFetch(`/api/admin/users/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: active }) });
+      if (!resp.ok) { const data = await resp.json(); setMsg(data.detail || '操作失败', true); return; }
+      await loadAdminUsers();
+    }
+
+    async function resetUserPassword(id) {
+      const password = window.prompt('请输入新密码（至少8位）');
+      if (!password) return;
+      const resp = await apiFetch(`/api/admin/users/${id}/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+      if (!resp.ok) { const data = await resp.json(); setMsg(data.detail || '重置失败', true); return; }
+      setMsg('密码已重置');
+    }
+
+    async function apiFetch(url, options = {}) {
+      const opts = { credentials: 'same-origin', ...options, headers: { ...(options.headers || {}) } };
+      if (csrfToken && opts.method && opts.method !== 'GET') opts.headers['X-CSRF-Token'] = csrfToken;
+      const resp = await fetch(url, opts);
+      if (resp.status === 401) { showLogin(); throw new Error('请先登录'); }
+      return resp;
+    }
+
+    async function login() {
+      const msg = document.getElementById('login_msg');
+      msg.textContent = '登录中...';
+      const resp = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ username: document.getElementById('login_username').value.trim(), password: document.getElementById('login_password').value }) });
+      const data = await resp.json();
+      if (!resp.ok) { msg.textContent = data.detail || '登录失败'; msg.style.color = '#b42318'; return; }
+      showApp(data); await initApp();
+    }
+
+    async function logout() {
+      await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      if (updatesSocket) updatesSocket.close();
+      showLogin();
+    }
 
     function setMsg(text, bad = false) {
       const el = document.getElementById('msg');
@@ -535,7 +621,7 @@
     async function saveConfig() {
       setMsg('保存中...');
       try {
-        const resp = await fetch('/api/config', {
+        const resp = await apiFetch('/api/config', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildConfigPayload())
@@ -554,7 +640,7 @@
       setMsg('发送测试邮件中...');
       try {
         const recipients = splitRecipients(document.getElementById('recipients').value);
-        const resp = await fetch('/api/actions/test-email', {
+        const resp = await apiFetch('/api/actions/test-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recipients })
@@ -570,7 +656,7 @@
     async function runCheck() {
       setMsg('正在执行检测...');
       try {
-        const resp = await fetch('/api/actions/run-check', { method: 'POST' });
+        const resp = await apiFetch('/api/actions/run-check', { method: 'POST' });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.detail || '检测失败');
         const count = (data.results || []).length;
@@ -584,7 +670,7 @@
     }
 
     async function loadConfig() {
-      const resp = await fetch('/api/config');
+      const resp = await apiFetch('/api/config');
       const data = await resp.json();
       fillConfig(data);
     }
@@ -618,7 +704,7 @@
     }
 
     async function loadStatus() {
-      const resp = await fetch('/api/status');
+      const resp = await apiFetch('/api/status');
       const data = await resp.json();
       renderStatus(data);
     }
@@ -629,7 +715,7 @@
     }
 
     async function loadAlerts() {
-      const resp = await fetch('/api/alerts?limit=200');
+      const resp = await apiFetch('/api/alerts?limit=200');
       const data = await resp.json();
       renderAlerts(data.items);
     }
@@ -699,7 +785,7 @@
       };
     }
 
-    async function init() {
+    async function initApp() {
       try {
         await loadConfig();
         await loadStatus();
@@ -710,6 +796,16 @@
         setMsg('初始化失败: ' + (err.message || String(err)), true);
         startPollingFallback();
       }
+    }
+
+    async function init() {
+      try {
+        const resp = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        if (!resp.ok) { showLogin(); return; }
+        const user = await resp.json();
+        showApp(user);
+        await initApp();
+      } catch (_) { showLogin(); }
     }
 
     init();

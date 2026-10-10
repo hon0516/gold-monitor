@@ -169,6 +169,25 @@ class TestEmailRequest(BaseModel):
     recipients: Optional[list[str]] = None
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=200)
+
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=8, max_length=200)
+    is_admin: bool = False
+
+
+class PasswordResetRequest(BaseModel):
+    password: str = Field(min_length=8, max_length=200)
+
+
+class UserStatusRequest(BaseModel):
+    is_active: bool
+
+
 class CheckResult(BaseModel):
     source_code: str = ""
     source_name: str = ""

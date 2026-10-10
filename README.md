@@ -76,6 +76,19 @@ FastAPI 文档页面：
 
 服务启动时会自动创建 `data/gold_monitor.db`。如果数据库里没有配置，会写入默认配置；如果 SMTP 字段为空，会使用对应环境变量作为默认值。
 
+### 多用户登录
+
+服务现在按用户隔离配置、收件人、告警记录和监控任务。首次启动前必须设置：
+
+```bash
+export ADMIN_USERNAME=admin
+export ADMIN_PASSWORD='change-this-to-a-long-password'
+```
+
+首次启动会创建管理员账号；管理员登录 Web 页面后，可以在“用户管理”中创建、停用用户和重置密码。每个用户只能读取和修改自己的 SMTP、告警策略、运行状态及历史记录。
+
+如果通过 HTTPS 部署，可设置 `GOLD_MONITOR_COOKIE_SECURE=1`，强制会话 Cookie 只通过 HTTPS 传输。
+
 ### SMTP 环境变量
 
 推荐在部署环境中预置 SMTP 默认值，页面只维护收件人和告警阈值：
@@ -149,6 +162,8 @@ SMTP 安全模式支持：
 | `GET` | `/api/alerts?limit=20` | 查询最近告警记录，`limit` 范围 1-200 |
 | `POST` | `/api/utils/parse-recipients` | 解析收件人文本 |
 | `WS` | `/ws/updates` | 推送状态快照和最近告警 |
+
+登录接口为 `POST /api/auth/login`，登出接口为 `POST /api/auth/logout`。配置更新、手动检测、测试邮件和管理员操作需要登录会话及 CSRF Token。
 
 ### 更新配置示例
 
