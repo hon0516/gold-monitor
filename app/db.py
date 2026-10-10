@@ -81,15 +81,15 @@ class Database:
                     id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL DEFAULT 1 REFERENCES users(id),
                     source_code TEXT NOT NULL, sampled_at TEXT NOT NULL, price REAL NOT NULL
                 );
-                CREATE INDEX IF NOT EXISTS idx_price_samples_user_source_time ON price_samples(user_id, source_code, sampled_at);
-                CREATE INDEX IF NOT EXISTS idx_alert_events_user_id ON alert_events(user_id, id);
-                CREATE INDEX IF NOT EXISTS idx_run_logs_user_id ON run_logs(user_id, id);
                 """
             )
             for table in ("alert_events", "run_logs", "price_samples"):
                 columns = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
                 if "user_id" not in columns:
                     conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_price_samples_user_source_time ON price_samples(user_id, source_code, sampled_at)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_alert_events_user_id ON alert_events(user_id, id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_run_logs_user_id ON run_logs(user_id, id)")
             legacy = conn.execute("SELECT config_json FROM settings WHERE id=1").fetchone()
             users = conn.execute("SELECT id FROM users ORDER BY id").fetchall()
             if not users:
