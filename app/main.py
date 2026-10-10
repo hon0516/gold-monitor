@@ -317,7 +317,8 @@ async def admin_users(user: dict = Depends(admin_user)) -> dict:
 
 
 @app.post("/api/admin/users")
-async def admin_create_user(payload: UserCreateRequest, user: dict = Depends(admin_user)) -> dict:
+async def admin_create_user(payload: UserCreateRequest, request: Request, user: dict = Depends(admin_user)) -> dict:
+    _require_csrf(request, user)
     try:
         return db.create_user(payload.username, payload.password, payload.is_admin)
     except Exception as exc:  # noqa: BLE001
