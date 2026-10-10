@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.hon.gold-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/Users/hon/Desktop/custom/gold-monitor/scripts/run_launchd.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/hon/Desktop/custom/gold-monitor</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>GOLD_MONITOR_ENV_FILE</key>
+        <string>/Users/hon/Desktop/custom/gold-monitor/.env.launchd</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/hon/Desktop/custom/gold-monitor/logs/uvicorn.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/hon/Desktop/custom/gold-monitor/logs/uvicorn.err.log</string>
+</dict>
+</plist>

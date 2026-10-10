@@ -31,7 +31,7 @@ class SMTPSettings(BaseModel):
     security: SMTPMode = "starttls"
     username: str = ""
     password: str = ""
-    sender_name: str = "浙商积存金提醒"
+    sender_name: str = "积存金告警提醒"
     sender_email: str = ""
     recipients: list[str] = Field(default_factory=list)
     subject_prefix: str = "[浙商]"
@@ -56,7 +56,7 @@ class SMTPSettings(BaseModel):
             security=_env_value("SMTP_SECURITY", "SMTP_SECURITY", "starttls"),
             username=_env_value("SMTP_USERNAME", "SMTP_USERNAME"),
             password=_env_value("SMTP_PASSWORD", "SMTP_PASSWORD"),
-            sender_name=_env_value("SMTP_SENDER_NAME", "SMTP_SENDER_NAME", "浙商积存金提醒"),
+            sender_name=_env_value("SMTP_SENDER_NAME", "SMTP_SENDER_NAME", "积存金告警提醒"),
             sender_email=_env_value("SMTP_SENDER_EMAIL", "SMTP_SENDER_EMAIL"),
             subject_prefix=_env_value("SMTP_SUBJECT_PREFIX", "SMTP_SUBJECT_PREFIX", "[浙商]"),
         )

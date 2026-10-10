@@ -1,0 +1,16 @@
+[Unit]
+Description=Gold Monitor FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/gold-monitor
+Environment=GOLD_MONITOR_ENV_FILE=/home/admin/gold-monitor/.env.production
+ExecStart=/home/admin/gold-monitor/scripts/run_linux.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -12,6 +12,7 @@ from .models import BankSourceConfig
 
 API_HOST = "https://api.jdjygold.com"
 MS_API_HOST = "https://ms.jr.jd.com"
+STALE_QUOTE_THRESHOLD = timedelta(minutes=10)
 
 AVAILABLE_SOURCES: dict[str, BankSourceConfig] = {
     "zheshang": BankSourceConfig(
@@ -112,6 +113,19 @@ def _extract_prices(items: Iterable[dict], tz: ZoneInfo) -> list[tuple[datetime,
     return points
 
 
+def _resolve_run_time(latest_time: str | int | None, tz: ZoneInfo, observed_now: datetime | None = None) -> datetime:
+    now_dt = observed_now or datetime.now(tz)
+    if not latest_time:
+        return now_dt
+    try:
+        source_dt = datetime.fromtimestamp(int(latest_time) / 1000.0, tz=tz)
+    except (TypeError, ValueError):
+        return now_dt
+    if abs(now_dt - source_dt) > STALE_QUOTE_THRESHOLD:
+        return now_dt
+    return source_dt
+
+
 def fetch_snapshot(
     *,
     source: BankSourceConfig,
@@ -122,15 +136,12 @@ def fetch_snapshot(
     local_points: list[tuple[datetime, float]] | None = None,
 ) -> MarketSnapshot:
     tz = ZoneInfo(timezone)
+    observed_now = datetime.now(tz)
 
     latest_resp = _request_json(source, source.latest_url, source.latest_method)
     latest = latest_resp.get("resultData", {}).get("datas", {})
     current = float(latest["price"])
-    latest_time = latest.get("time")
-    if latest_time:
-        now_dt = datetime.fromtimestamp(int(latest_time) / 1000.0, tz=tz)
-    else:
-        now_dt = datetime.now(tz)
+    now_dt = _resolve_run_time(latest.get("time"), tz, observed_now)
 
     points: list[tuple[datetime, float]] = []
     if source.today_url:
