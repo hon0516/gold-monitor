@@ -210,8 +210,19 @@
       cursor: not-allowed;
       opacity: 0.45;
     }
-    #login_view { max-width: 420px; margin: 12vh auto; }
-    #app_view.hidden, #login_view.hidden { display: none; }
+    .hidden { display: none !important; }
+    #login_view {
+      width: min(420px, calc(100% - 32px));
+      margin: 12vh auto;
+      padding: 28px 30px;
+      text-align: center;
+    }
+    #login_view h1 { margin-bottom: 24px; }
+    #login_view .row { text-align: center; margin-bottom: 16px; }
+    #login_view input { text-align: center; }
+    #login_view button { min-width: 150px; margin-top: 8px; }
+    .user-actions { display: flex; align-items: center; gap: 8px; }
+    .user-actions button { width: 88px; min-height: 38px; padding: 8px 10px; }
 
     @media (max-width: 980px) {
       .wrap { grid-template-columns: 1fr; }
@@ -362,10 +373,16 @@
     function showLogin() {
       document.getElementById('login_view').classList.remove('hidden');
       document.getElementById('app_view').classList.add('hidden');
+      const msg = document.getElementById('login_msg');
+      msg.textContent = '';
+      msg.style.color = '';
+      document.getElementById('login_password').value = '';
     }
 
     function showApp(user) {
-      csrfToken = user.csrf_token || csrfToken;
+      const session = user;
+      user = user.user || user;
+      csrfToken = session.csrf_token || user.csrf_token || csrfToken;
       document.getElementById('login_view').classList.add('hidden');
       document.getElementById('app_view').classList.remove('hidden');
       document.getElementById('admin_panel').classList.toggle('hidden', !user.is_admin);
@@ -377,7 +394,7 @@
       if (!resp.ok) return;
       const data = await resp.json();
       document.getElementById('users_list').innerHTML = (data.items || []).map(item =>
-        `<div style="display:flex;gap:8px;align-items:center;margin:6px 0;"><span>${item.username}${item.is_admin ? '（管理员）' : ''}</span><span class="tag">${item.is_active ? '启用' : '停用'}</span><button class="btn-secondary" onclick="toggleUser(${item.id}, ${!item.is_active})">${item.is_active ? '停用' : '启用'}</button><button class="btn-secondary" onclick="resetUserPassword(${item.id})">重置密码</button></div>`
+        `<div style="display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap;"><span>${item.username}${item.is_admin ? '（管理员）' : ''}</span><span class="tag">${item.is_active ? '启用' : '停用'}</span><span class="user-actions"><button class="${item.is_active ? 'btn-danger' : 'btn-secondary'}" onclick="toggleUser(${item.id}, ${!item.is_active})">${item.is_active ? '停用' : '启用'}</button><button class="btn-secondary" onclick="resetUserPassword(${item.id})">重置密码</button></span></div>`
       ).join('');
     }
 
@@ -422,6 +439,11 @@
     async function logout() {
       await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
       if (updatesSocket) updatesSocket.close();
+      updatesSocket = null;
+      stopPollingFallback();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+      csrfToken = '';
       showLogin();
     }
 
